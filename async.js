@@ -38,7 +38,7 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
             countRunning--;
             countCompleted++;
             translationData[index] = data;
-            if (requestIndex === jobs.length && countCompleted === requestIndex) {
+            if (jobs.length === countCompleted) {
                 resolve(translationData);
             }
             if (countRunning < parallelNum && requestIndex !== jobs.length) {
