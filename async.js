@@ -10,6 +10,7 @@ exports.runParallel = runParallel;
  */
 
 let countRunning = 0;
+let countCompleted = 0;
 let requestIndex = 0;
 let translationData = [];
 
@@ -35,11 +36,12 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
 
         function followingRequest(data, index) {
             countRunning--;
+            countCompleted++;
             translationData[index] = data;
-            if (requestIndex === jobs.length) {
+            if (requestIndex === jobs.length && countCompleted === requestIndex) {
                 resolve(translationData);
             }
-            if (countRunning < parallelNum) {
+            if (countRunning < parallelNum && requestIndex !== jobs.length) {
                 translate(jobs[requestIndex], requestIndex);
             }
         }
@@ -47,9 +49,9 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
 }
 
 function requestApply(request, timeout) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         request()
-            .then(resolve, resolve);
-        setTimeout(() => resolve(new Error('Promise timeout')), timeout);
+            .then(resolve, reject);
+        setTimeout(() => reject(new Error('Долго выполняется')), timeout);
     });
 }
