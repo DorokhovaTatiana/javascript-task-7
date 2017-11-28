@@ -50,6 +50,6 @@ function requestApply(request, timeout) {
     return new Promise((resolve, reject) => {
         request()
             .then(resolve, reject);
-        setTimeout(() => reject(new Error('Долго выполняется')), timeout);
+        setTimeout(() => reject(new Error('Promise timeout')), timeout);
     });
 }
