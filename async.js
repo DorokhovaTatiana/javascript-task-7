@@ -14,7 +14,6 @@ runParallel.prototype = {
     requestIndex: 0,
     translationData: [],
     _translate: function (request, index) {
-        this.requestIndex++;
         new Promise(resolve => {
             request()
                 .then(resolve, resolve);
