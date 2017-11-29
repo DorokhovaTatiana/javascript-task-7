@@ -9,10 +9,28 @@ exports.runParallel = runParallel;
  * @param {Number} timeout - таймаут работы промиса
  */
 
-let countRunning = 0;
-let countCompleted = 0;
-let requestIndex = 0;
-let translationData = [];
+runParallel.prototype = {
+    requestIndex: 0,
+    translationData: [],
+    _translate: function (request, index) {
+        this.requestIndex++;
+        new Promise(resolve => {
+            request()
+                .then(resolve, resolve);
+            setTimeout(() => resolve(new Error('Promise timeout')), this.timeout);
+        })
+            .then(data => this._followingRequest(data, index));
+    },
+    _followingRequest: function (data, index) {
+        this.translationData[index] = data;
+        if (this.jobs.length === this.translationData.length) {
+            this.resolve(this.translationData);
+        }
+        if (this.requestIndex !== this.jobs.length) {
+            this._translate(this.jobs[this.requestIndex], this.requestIndex);
+        }
+    }
+};
 
 function runParallel(jobs, parallelNum, timeout = 1000) {
     // асинхронная магия
@@ -20,38 +38,14 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
         if (!jobs.length) {
             resolve([]);
         }
-
+        runParallel.prototype.resolve = resolve;
+        runParallel.prototype.jobs = jobs;
+        runParallel.prototype.parallelNum = parallelNum;
+        runParallel.prototype.timeout = timeout;
         jobs
             .slice(0, parallelNum)
             .forEach((request, index) => {
-                translate(request, index);
+                runParallel.prototype._translate(request, index);
             });
-
-        function translate(request, index) {
-            countRunning++;
-            requestIndex++;
-            requestApply(request, timeout)
-                .then(data => followingRequest(data, index));
-        }
-
-        function followingRequest(data, index) {
-            countRunning--;
-            countCompleted++;
-            translationData[index] = data;
-            if (jobs.length === countCompleted) {
-                resolve(translationData);
-            }
-            if (countRunning < parallelNum && requestIndex !== jobs.length) {
-                translate(jobs[requestIndex], requestIndex);
-            }
-        }
-    });
-}
-
-function requestApply(request, timeout) {
-    return new Promise(resolve => {
-        request()
-            .then(resolve, resolve);
-        setTimeout(() => resolve(new Error('Promise timeout')), timeout);
     });
 }
