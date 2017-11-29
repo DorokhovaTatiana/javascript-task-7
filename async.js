@@ -19,16 +19,17 @@ runParallel.prototype = {
             request()
                 .then(resolve, resolve);
             setTimeout(() => resolve(new Error('Promise timeout')), this.timeout);
-        }).then(data => this._followingRequest(data, index));
+        })
+            .then(data => this._followingRequest(data, index));
     },
     _followingRequest: function (data, index) {
-        this.countCompeled++;
         this.translationData[index] = data;
+        this.countCompeled++;
         if (this.countCompeled === this.jobs.length) {
             this.resolve(this.translationData);
         }
         if (this.requestIndex < this.jobs.length) {
-            this._translate(this.jobs[this.requestIndex], this.requestIndex);
+            this._translate(this.jobs[this.requestIndex], ++this.requestIndex);
         }
     }
 };
