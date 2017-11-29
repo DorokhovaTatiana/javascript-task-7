@@ -14,6 +14,7 @@ runParallel.prototype = {
     requestIndex: 0,
     translationData: [],
     _translate: function (request, index) {
+        this.requestIndex++;
         new Promise(resolve => {
             request()
                 .then(resolve, resolve);
@@ -28,7 +29,7 @@ runParallel.prototype = {
             this.resolve(this.translationData);
         }
         if (this.requestIndex < this.jobs.length) {
-            this._translate(this.jobs[this.requestIndex], ++this.requestIndex);
+            this._translate(this.jobs[this.requestIndex], this.requestIndex);
         }
     }
 };
