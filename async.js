@@ -26,7 +26,7 @@ runParallel.prototype = {
         if (this.jobs.length === this.translationData.length) {
             this.resolve(this.translationData);
         }
-        if (this.requestIndex !== this.jobs.length) {
+        if (this.requestIndex < this.jobs.length) {
             this._translate(this.jobs[this.requestIndex], this.requestIndex);
         }
     }
