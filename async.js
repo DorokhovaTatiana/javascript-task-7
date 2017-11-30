@@ -10,24 +10,26 @@ exports.runParallel = runParallel;
  */
 
 runParallel.prototype = {
-    _translate(request, index, requestsData) {
-        requestsData.requestIndex++;
+    countCompelled: 0,
+    requestIndex: 0,
+    translationData: [],
+    _translate: function (request, index) {
+        this.requestIndex++;
         new Promise(resolve => {
             request()
                 .then(resolve, resolve);
-            setTimeout(() => resolve(new Error('Promise timeout')), requestsData.timeout);
+            setTimeout(() => resolve(new Error('Promise timeout')), this.timeout);
         })
-            .then(data => this._followingRequest(data, index, requestsData));
+            .then(data => this._followingRequest(data, index));
     },
-    _followingRequest(data, index, requestsData) {
-        requestsData.translationData[index] = data;
-        requestsData.countCompeled++;
-        if (requestsData.countCompeled === requestsData.jobs.length) {
-            requestsData.resolve(requestsData.translationData);
+    _followingRequest: function (data, index) {
+        this.translationData[index] = data;
+        this.countCompelled++;
+        if (this.countCompelled === this.jobs.length) {
+            this.resolve(this.translationData);
         }
-        if (requestsData.requestIndex < requestsData.jobs.length) {
-            let nextIndex = requestsData.requestIndex;
-            this._translate(requestsData.jobs[nextIndex], nextIndex, requestsData);
+        if (this.requestIndex < this.jobs.length) {
+            this._translate(this.jobs[this.requestIndex], this.requestIndex);
         }
     }
 };
@@ -38,21 +40,14 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
         if (!jobs.length) {
             resolve([]);
         }
-
-        let requestsData = {
-            jobs,
-            resolve,
-            timeout,
-            parallelNum,
-            countCompeled: 0,
-            requestIndex: 0,
-            translationData: []
-        };
-
+        runParallel.prototype.resolve = resolve;
+        runParallel.prototype.jobs = jobs;
+        runParallel.prototype.parallelNum = parallelNum;
+        runParallel.prototype.timeout = timeout;
         jobs
             .slice(0, parallelNum)
             .forEach((request, index) => {
-                runParallel.prototype._translate(request, index, requestsData);
+                runParallel.prototype._translate(request, index);
             });
     });
 }
