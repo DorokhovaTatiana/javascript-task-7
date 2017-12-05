@@ -9,28 +9,37 @@ exports.runParallel = runParallel;
  * @param {Number} timeout - таймаут работы промиса
  */
 
-runParallel.prototype = {
-    _translate(request, index, requestsData) {
-        requestsData.requestIndex++;
+class Translator {
+    constructor(jobs, parallelNum, timeout, resolve) {
+        this.jobs = jobs;
+        this.requestIndex = 0;
+        this.timeout = timeout;
+        this.resolve = resolve;
+        this.countCompelled = 0;
+        this.translationData = [];
+        this.parallelNum = parallelNum;
+    }
+    _translate(request, index) {
+        this.requestIndex++;
         new Promise(resolve => {
             request()
                 .then(resolve, resolve);
-            setTimeout(() => resolve(new Error('Promise timeout')), requestsData.timeout);
+            setTimeout(() => resolve(new Error('Promise timeout')), this.timeout);
         })
-            .then(data => this._followingRequest(data, index, requestsData));
-    },
-    _followingRequest(data, index, requestsData) {
-        requestsData.translationData[index] = data;
-        requestsData.countCompelled++;
-        if (requestsData.countCompelled === requestsData.jobs.length) {
-            requestsData.resolve(requestsData.translationData);
+            .then(data => this._followingRequest(data, index));
+    }
+    _followingRequest(data, index) {
+        this.translationData[index] = data;
+        this.countCompelled++;
+        if (this.countCompelled === this.jobs.length) {
+            this.resolve(this.translationData);
         }
-        if (requestsData.requestIndex < requestsData.jobs.length) {
-            let nextIndex = requestsData.requestIndex;
-            this._translate(requestsData.jobs[nextIndex], nextIndex, requestsData);
+        if (this.requestIndex < this.jobs.length) {
+            let nextIndex = this.requestIndex;
+            this._translate(this.jobs[nextIndex], nextIndex);
         }
     }
-};
+}
 
 function runParallel(jobs, parallelNum, timeout = 1000) {
     // асинхронная магия
@@ -38,21 +47,11 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
         if (!jobs.length) {
             resolve([]);
         }
-
-        let requestsData = {
-            jobs,
-            resolve,
-            timeout,
-            parallelNum,
-            countCompelled: 0,
-            requestIndex: 0,
-            translationData: []
-        };
-
+        let translator = new Translator(jobs, parallelNum, timeout, resolve);
         jobs
             .slice(0, parallelNum)
             .forEach((request, index) => {
-                runParallel.prototype._translate(request, index, requestsData);
+                translator._translate(request, index);
             });
     });
 }
